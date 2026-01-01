@@ -13,7 +13,7 @@ The development of this library started in February 2024 as part of [Aura Health
 
 **Github** : https://github.com/Aura-healthcare
 
-**Version** : 0.2.0
+**Version** : 0.3.0
 
 
 ## Installation / Prerequisites
@@ -82,7 +82,7 @@ qrs_ts_interpolated = qrs_detector(signal_with_nans,
 **Function Signature:**
 
 ```python
-fast_qrs_detector.qrs_detector(signal_data, freq_sampling: int, max_nan_interpolation=0, min_segment_len=50)
+fast_qrs_detector.qrs_detector(signal_data, freq_sampling: int, min_rr_sec=0.33, max_nan_interpolation=0, min_segment_len=50)
 ```
 
 **Parameters:**
@@ -93,6 +93,7 @@ fast_qrs_detector.qrs_detector(signal_data, freq_sampling: int, max_nan_interpol
         - **One column:** Must be numeric (signal values). Must not contain NaNs.
         - **Two columns:** One column must be numeric (signal values), and the other must be datetime-like (`datetime64` or `timedelta64`). NaNs in the signal column can be handled via `max_nan_interpolation`.
 - `freq_sampling` (`int`): The sampling frequency of the signal in Hz.
+- `min_rr_sec` (`float`, optional): Minimum RR interval in seconds, which determines the maximum detectable heart rate. Defaults to `0.33` (~180 BPM). See [Heart Rate Limit Parameter](#heart-rate-limit-parameter) for details.
 - `max_nan_interpolation` (`int`, optional): **Only for 2-column DataFrame input.** Max consecutive NaNs in the signal column to interpolate linearly. Gaps larger than this will cause the signal to be split into segments. Defaults to 0 (no interpolation).
 - `min_segment_len` (`int`, optional): **Only for 2-column DataFrame input.** The minimum number of data points required in a segment (after splitting by large NaN gaps) for it to be processed. Defaults to 50.
 
@@ -146,7 +147,32 @@ fast_qrs_detector.print_signal_with_qrs(signal_data, qrs_predicted, true_qrs=Non
 This function *creates* the plot but does not automatically display it by calling `plt.show()`. This gives you flexibility:
 - In **Jupyter Notebooks** with `%matplotlib inline`, the plot usually appears automatically after the cell runs.
 - In **Python scripts** or other environments (or if the plot doesn't appear automatically in Jupyter), you need to explicitly call `matplotlib.pyplot.show()` *after* calling `print_signal_with_qrs` to display the figure.
-- This design allows you to add more elements to the plot (e.g., `plt.title(...)`, `plt.xlabel(...)`) or save it (`plt.savefig(...)`) *before* displaying it.
+- This design allows you to add more elements to the plot (e.g., `plt.title(...)`, `plt.xlabel(...)`) or save it (`plt.savefig(...)`) *before* displaying it. 
+
+## Heart Rate Limit Parameter
+
+The `min_rr_sec` parameter controls the minimum interval between consecutive R-peaks, which sets the maximum detectable heart rate:
+
+| `min_rr_sec` | Max HR (BPM) | Use Case |
+|--------------|--------------|----------|
+| `0.33` (default) | ~180 | Standard ECG, resting to moderate exercise |
+| `0.30` | ~200 | Exercise ECG |
+| `0.25` | ~240 | High-intensity exercise |
+| `0.20` | ~300 | Tachycardia, stress tests |
+
+### Benchmark Results
+
+A comprehensive evaluation was conducted on the main 4 datasets with tolerance = 100ms:
+
+![F1-Score by Dataset and BPM](figures/heatmap_bpm.png)
+
+**Key findings:**
+- The default value (180 BPM / 0.33s) provides the best overall average F1-score
+- Lower thresholds (higher BPM limits) slightly improve performance in very noisy signals (SNR <= 0dB)
+- In clean to moderately noisy signals, the 180 BPM limit performs best
+- Gains from increasing the BPM limit are marginal (+0.1% on standard datasets)
+
+**Recommendation:** Keep the default `min_rr_sec=0.33` unless you specifically need to detect very high heart rates (>180 BPM), which typically only occurs during high-intensity exercise or pathological tachycardia.
 
 ## Quality control and performances
 
