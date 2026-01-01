@@ -178,7 +178,7 @@ def qrs_detector(signal_data, freq_sampling: int,
             # Apply QRS detection algorithm to the valid segment
             try:
                 cleaned_ecg = preprocess_ecg(segment_signal, freq_sampling, 5, 22, size_window=int(0.1 * freq_sampling))
-                peaks = detect_peaks(cleaned_ecg, no_peak_distance=int(freq_sampling * 0.65), distance=int(freq_sampling * 0.33))
+                peaks = detect_peaks(cleaned_ecg, no_peak_distance=int(freq_sampling * 0.65), distance=int(freq_sampling * 0.2))
                 qrs_indices_segment = threshold_detection(cleaned_ecg, peaks, freq_sampling, initial_search_samples=int(freq_sampling * 0.83), long_peak_distance=int(freq_sampling * 1.111))
             except Exception as e_algo:
                  print(f"Warning: Algorithm failed on segment {start_idx}-{end_idx}: {e_algo}. Skipping segment.")
@@ -190,7 +190,7 @@ def qrs_detector(signal_data, freq_sampling: int,
     else:
         # --- Direct processing (NumPy array or 1-column DataFrame) --- #
         cleaned_ecg = preprocess_ecg(signal_values, freq_sampling, 5, 22, size_window=int(0.1 * freq_sampling))
-        peaks = detect_peaks(cleaned_ecg, no_peak_distance=int(freq_sampling * 0.65), distance=int(freq_sampling * 0.33))
+        peaks = detect_peaks(cleaned_ecg, no_peak_distance=int(freq_sampling * 0.65), distance=int(freq_sampling * 0.2))
         qrs_indices = threshold_detection(cleaned_ecg, peaks, freq_sampling, initial_search_samples=int(freq_sampling * 0.83), long_peak_distance=int(freq_sampling * 1.111))
         all_qrs_indices = qrs_indices
 
